@@ -154,9 +154,9 @@ async function fetchTweets(url: string): Promise<string[]> {
   const args = process.argv.slice(2);
   const searchTerm = args[0];
 
-  // console.log("Creating event for ", eventText);
-  // const res = await createEvent();
-  // console.log(res);
+  console.log("Creating event for ", searchTerm);
+  const res = await createEvent();
+  console.log(res);
   try {
     // ASK chatgpt for an appropriate twitter search query
     const searchQuery = await chatGPT(
@@ -169,10 +169,10 @@ async function fetchTweets(url: string): Promise<string[]> {
       baseURL + encodeURIComponent(searchQuery || searchTerm)
     );
     console.log("Fetched tweets:", tweets);
-    const res = await checkEvent(tweets, searchTerm);
-    console.log("Summary:", res);
+    const tweetSummary = await checkEvent(tweets, searchTerm);
+    console.log("Summary:", tweetSummary);
     // check if res starts with true or false or ns
-    const result = res?.split("\n")[0].toLowerCase();
+    const result = tweetSummary?.split("\n")[0].toLowerCase();
     console.log("Result is ", result);
     let resultNum = 0;
     if (result?.startsWith("true")) {
@@ -185,13 +185,13 @@ async function fetchTweets(url: string): Promise<string[]> {
     if (resultNum != 3) {
       console.log("Result is ", resultNum);
       console.log("Finishing event with result: ", resultNum);
-      // finishEvent(res?.data.address as any, 1);
-      // console.log(
-      //   "Finished event",
-      //   eventText,
-      //   "with address: ",
-      //   res?.data.address
-      // );
+      finishEvent(res?.data.address as any, 1);
+      console.log(
+        "Finished event",
+        searchTerm,
+        "with address: ",
+        res?.data.address
+      );
     }
   } catch (error) {
     console.error("Error:", error);

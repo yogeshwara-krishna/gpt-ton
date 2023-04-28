@@ -3,7 +3,8 @@ import { WalletContractV3R2, TonClient, Address } from "ton";
 import { mnemonicToWalletKey } from "ton-crypto";
 import puppeteer from "puppeteer";
 import { Configuration, OpenAIApi } from "openai";
-import { scrollPageToBottom } from 'puppeteer-autoscroll-down';
+import { scrollPageToBottom } from "puppeteer-autoscroll-down";
+import fs from "fs";
 
 import cheerio from "cheerio";
 
@@ -130,7 +131,7 @@ async function fetchTweets(url: string): Promise<string[]> {
     "#react-root div.css-1dbjc4n.r-18u37iz > div.css-1dbjc4n.r-1iusvr4.r-16y2uox.r-1777fci.r-kzbkwu > div:nth-child(2)"
   );
   // scroll to bottom
-  await scrollPageToBottom((page as any), {
+  await scrollPageToBottom(page as any, {
     size: 500,
     delay: 250,
     stepsLimit: 5,
@@ -150,13 +151,32 @@ async function fetchTweets(url: string): Promise<string[]> {
   return tweets;
 }
 
+const sleep = async (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
 (async () => {
   const args = process.argv.slice(2);
   const searchTerm = args[0];
 
   console.log("Creating event for ", searchTerm);
-  const res = await createEvent();
-  console.log(res);
+  let res: any;
+  if (process.env.MNEMONIC1 && process.env.MNEMONIC2) {
+    res = await createEvent();
+    console.log(res);
+  } else {
+    console.log("No MNEOMNICS found in .env file");
+    console.info("Continuing without creating event");
+  }
+
+  // check if there's a user_data folder if there's not console
+  if (!fs.existsSync("./user_data")) {
+    console.log(
+      "Looks like it's your first time running this script. Please login to twitter and then close the browser. Then run this script again."
+    );
+    await sleep(1000);
+  }
+
   try {
     // ASK chatgpt for an appropriate twitter search query
     const searchQuery = await chatGPT(
@@ -185,20 +205,25 @@ async function fetchTweets(url: string): Promise<string[]> {
     if (resultNum != 3) {
       console.log("Result is ", resultNum);
       console.log("Finishing event with result: ", resultNum);
-      finishEvent(res?.data.address as any, 1);
-      console.log(
-        "Finished event",
-        searchTerm,
-        "with address: ",
-        res?.data.address
-      );
+      if (process.env.MNEMONIC1 && process.env.MNEMONIC2) {
+        finishEvent(res?.data.address as any, 1);
+        console.log(
+          "Finished event",
+          searchTerm,
+          "with address: ",
+          res?.data.address
+        );
+      }
     }
   } catch (error) {
     console.error("Error:", error);
   }
 })();
 
-async function checkEvent(tweets: string[], searchTerm: string): Promise<string | undefined> {
+async function checkEvent(
+  tweets: string[],
+  searchTerm: string
+): Promise<string | undefined> {
   const allTweets = tweets.join("\n");
   const summary = await chatGPT(
     `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${allTweets}\n\.`

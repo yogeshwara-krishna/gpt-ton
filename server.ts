@@ -98,66 +98,6 @@ const finishEvent = async (address: string, result: number) => {
   return response;
 };
 
-// (async () => {
-//   // first take arguments from command line it will
-//   // be like node server.js "Elon Musk will be the CEO of Twitter"
-// const args = process.argv.slice(2);
-// const eventText = args[0];
-// console.log("Creating event for ", eventText);
-// const res = await createEvent();
-// console.log(res);
-//   // Run the Auto-GPT command via the shell script
-//   const autoGpt = spawn("run_autogpt.bat");
-
-//   const rl = readline.createInterface({
-//     input: autoGpt.stdout,
-//     output: autoGpt.stdin,
-//     terminal: true,
-//   });
-
-//   let output = "";
-//   let prev_line = "";
-//   rl.on("line", (line: string) => {
-//     output += line;
-//     // if line doesn't include a single digit or a single letter, then return
-//     if (line.length === 0) return;
-//     if (prev_line.includes("Thinking") && line.includes("Thinking")) return;
-//     console.log(line); // Show the output in the same terminal
-//     prev_line = line;
-//     if (line.includes("Enter questions")) {
-//       // Simulate typing the questions in separate lines without numbers
-//       const questions = [
-//         "Check whether Elon Musk will be the CEO of Twitter?",
-//         "Output result to the file output.txt",
-//         "Shutdown",
-//       ];
-
-//       questions.forEach((question) => {
-//         console.log(question);
-//         autoGpt.stdin.write(`${question}\n`);
-//       });
-//     }
-//   });
-
-//   autoGpt.stderr.on("data", (data) => {
-//     console.error(`stderr: ${data}`);
-//   });
-
-//   autoGpt.on("close", (code) => {
-//     // Read output from output.txt
-//     console.log("Checking output.txt");
-//     console.log("Result is ", 1);
-//     console.log("Finishing event with result: ", 1);
-//     // finishEvent(res?.data.address as any, 1);
-//     // console.log(
-//     //   "Finished event",
-//     //   eventText,
-//     //   "with address: ",
-//     //   res?.data.address
-//     // );
-//   });
-// })();
-
 const chatGPT = async (message: string) => {
   const res = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",

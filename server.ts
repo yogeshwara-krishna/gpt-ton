@@ -3,6 +3,7 @@ import { WalletContractV3R2, TonClient, Address } from "ton";
 import { mnemonicToWalletKey } from "ton-crypto";
 import puppeteer from "puppeteer";
 import { Configuration, OpenAIApi } from "openai";
+import { scrollPageToBottom } from 'puppeteer-autoscroll-down';
 
 import cheerio from "cheerio";
 
@@ -129,7 +130,11 @@ async function fetchTweets(url: string): Promise<string[]> {
     "#react-root div.css-1dbjc4n.r-18u37iz > div.css-1dbjc4n.r-1iusvr4.r-16y2uox.r-1777fci.r-kzbkwu > div:nth-child(2)"
   );
   // scroll to bottom
-
+  await scrollPageToBottom((page as any), {
+    size: 500,
+    delay: 250,
+    stepsLimit: 5,
+  });
   await page.waitForTimeout(3000);
   const content = await page.content();
   const $ = cheerio.load(content);

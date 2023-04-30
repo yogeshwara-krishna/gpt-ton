@@ -1,40 +1,10 @@
 import fs from "fs";
-import axios from "axios";
-import { createEvent, finishEvent } from "./ton_actions";
-import { fetchTweets } from "./tweets";
-import { queryGPT, sleep } from "./utils";
+import { createEvent, finishEvent } from "./utils/ton_actions";
+import { fetchTweets } from "./utils/tweets";
+import { queryGPT, sleep } from "./utils/utils";
 require("dotenv").config();
 
 const baseURL = "https://twitter.com/search?q=";
-
-const wikipediaApiUrl = "https://en.wikipedia.org/w/api.php";
-
-async function searchWikipedia(searchQuery: string): Promise<void> {
-  try {
-    const response = await axios.get(wikipediaApiUrl, {
-      params: {
-        action: "query",
-        list: "search",
-        format: "json",
-        srsearch: searchQuery,
-        utf8: 1,
-        formatversion: 2,
-      },
-    });
-
-    const searchResults = response.data.query.search;
-
-    console.log("Search Results:");
-    searchResults.forEach((result: any) => {
-      console.log(`${result.title}: ${result.pageid}`);
-    });
-  } catch (error) {
-    console.error("Error fetching data:", error);
-  }
-}
-
-// Example usage:
-searchWikipedia("Node.js");
 
 (async () => {
   const args = process.argv.slice(2);

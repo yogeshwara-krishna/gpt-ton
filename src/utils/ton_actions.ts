@@ -1,4 +1,4 @@
-import { Event } from "./wrappers/Event";
+import { Event } from "../../wrappers/Event";
 import { WalletContractV3R2, TonClient, Address } from "ton";
 import { mnemonicToWalletKey } from "ton-crypto";
 const getSenderFromMnemonic = async (mnemonic: string, client: TonClient) => {

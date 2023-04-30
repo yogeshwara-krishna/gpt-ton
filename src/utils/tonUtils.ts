@@ -1,6 +1,7 @@
 import { Event } from "../../wrappers/Event";
 import { WalletContractV3R2, TonClient, Address } from "ton";
 import { mnemonicToWalletKey } from "ton-crypto";
+import { config } from "../config";
 const getSenderFromMnemonic = async (mnemonic: string, client: TonClient) => {
   const keypair = await mnemonicToWalletKey(mnemonic.split(" "));
   const wallet = WalletContractV3R2.create({
@@ -26,7 +27,7 @@ const createEvent = async () => {
   try {
     // Configure the Ton client
     const client = getTestClient();
-    const mnemonic: string = process.env.MNEMONIC1 as any;
+    const mnemonic: string = config.tonMnemonic1;
 
     const keypair = await mnemonicToWalletKey(mnemonic.split(" "));
     console.log(keypair.publicKey);
@@ -38,7 +39,7 @@ const createEvent = async () => {
     console.log(`Wallet address ${wallet.address}`);
     const oracle = wallet.address;
     const sender = await getSenderFromMnemonic(
-      process.env.MNEMONIC2 as any,
+      config.tonMnemonic2,
       client
     );
     const uid = 1234567890;
@@ -72,7 +73,7 @@ const createEvent = async () => {
 const finishEvent = async (address: string, result: number) => {
   const client = getTestClient();
   const senderNew = await getSenderFromMnemonic(
-    process.env.MNEMONIC1 as any,
+    config.tonMnemonic1,
     client
   );
   const addr = Address.parse(address);

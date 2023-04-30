@@ -1,0 +1,8 @@
+export const config = {
+  tonMnemonic1: "TON_TEST_MNEMONIC_1",
+  tonMnemonic2: "TON_TEST_MNEMONIC_2",
+  openAiApiKey: "YOUR_OPENAI_KEY",
+  newsApiKey: "afd",
+  googleApiKey: "adfs",
+  googleSearchEngineId: "adsf",
+};

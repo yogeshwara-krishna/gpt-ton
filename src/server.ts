@@ -1,10 +1,21 @@
 import fs from "fs";
-import { createEvent, finishEvent } from "./utils/ton_actions";
-import { fetchTweets } from "./utils/tweets";
-import { queryGPT, sleep } from "./utils/utils";
+import { createEvent, finishEvent } from "./utils/tonUtils";
+import { getResultThroughTweets } from "./utils/tweetUtils";
+import { queryGPT, sleep } from "./utils/openAIUtils";
+import { config } from "./config";
 require("dotenv").config();
 
-const baseURL = "https://twitter.com/search?q=";
+async function check(searchTerm: string) {
+  // queryGPT to classify the event whether it's related to politics, news or sports
+  const gptResponse = await queryGPT(
+    "Is " +
+      searchTerm +
+      " related to politics, news or sports?, answer in Politics, News or Sports, nothing else."
+  );
+  console.log("GPT has classified the event as: ", gptResponse);
+  if (gptResponse?.startsWith("Politics")) {
+  }
+}
 
 (async () => {
   const args = process.argv.slice(2);
@@ -12,7 +23,7 @@ const baseURL = "https://twitter.com/search?q=";
 
   console.log("Creating event for ", searchTerm);
   let res: any;
-  if (process.env.MNEMONIC1 && process.env.MNEMONIC2) {
+  if (config.tonMnemonic1 && config.tonMnemonic2) {
     res = await createEvent();
     console.log(res);
   } else {
@@ -29,22 +40,7 @@ const baseURL = "https://twitter.com/search?q=";
   }
 
   try {
-    // ASK chatgpt for an appropriate twitter search query
-    const searchQuery = await queryGPT(
-      "Give a twitter search query for finding the result of the following: " +
-        searchTerm +
-        ". Give exact query to type in twitter search bar. Nothing else."
-    );
-    console.log("Search query:", searchQuery);
-    const tweets = await fetchTweets(
-      baseURL + encodeURIComponent(searchQuery || searchTerm)
-    );
-    console.log("Fetched tweets:", tweets);
-    const tweetSummary = await checkEvent(tweets, searchTerm);
-    console.log("Summary:", tweetSummary);
-    // check if res starts with true or false or ns
-    const result = tweetSummary?.split("\n")[0].toLowerCase();
-    console.log("Result is ", result);
+    const result = await getResultThroughTweets(searchTerm);
     let resultNum = 0;
     if (result?.startsWith("true")) {
       resultNum = 1;
@@ -56,7 +52,7 @@ const baseURL = "https://twitter.com/search?q=";
     if (resultNum != 3) {
       console.log("Result is ", resultNum);
       console.log("Finishing event with result: ", resultNum);
-      if (process.env.MNEMONIC1 && process.env.MNEMONIC2) {
+      if (config.tonMnemonic1 && config.tonMnemonic2) {
         finishEvent(res?.data.address as any, 1);
         console.log(
           "Finished event",
@@ -70,14 +66,3 @@ const baseURL = "https://twitter.com/search?q=";
     console.error("Error:", error);
   }
 })();
-
-async function checkEvent(
-  tweets: string[],
-  searchTerm: string
-): Promise<string | undefined> {
-  const allTweets = tweets.join("\n");
-  const summary = await queryGPT(
-    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${allTweets}\n\.`
-  );
-  return summary;
-}

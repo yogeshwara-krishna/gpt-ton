@@ -15,11 +15,11 @@ async function fetchNewsArticles(query: string): Promise<any> {
   }
 }
 
-async function checkThroughNewsAPI(searchTerm: string): Promise<any> {
+async function consolidateNewsAPI(searchTerm: string): Promise<any> {
   const responseGPT =
     await queryGPT(`Create a query to search for in newsAPI for checking "${searchTerm}". Just respond with the query. Nothing else. 
-  For example if the thing to check is "Is Elon Musk the CEO of Tesla?", then the query would be "Elon Musk Tesla CEO"`);
-  
+  For example if the thing to check is "Is Elon Musk the CEO of Tesla?", then the query maybe "Elon Musk Tesla CEO" or "Elon Musk Tesla". Choose appropriately.`);
+
   if (!responseGPT) {
     throw "No response from GPT";
   }
@@ -32,16 +32,33 @@ async function checkThroughNewsAPI(searchTerm: string): Promise<any> {
     consolidatedResponse += article.title + ": " + article.description + "\n";
   }
   // truncate to 1024 characters
-  return consolidatedResponse.substring(0, 1024);
+  return consolidatedResponse.substring(0, 1024).toLowerCase();
 }
 
-(async () => {
-  const args = process.argv.slice(2);
-  const searchTerm = args[0];
+const checkThroughNewsAPI = async (searchTerm: string) => {
+  const consolidatedResponse = await consolidateNewsAPI(searchTerm);
+  const result = await queryGPT(
+    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${consolidatedResponse}\n\.`
+  );
+  console.log("Summary:", result);
+  let resultNum = 3
+  if (result?.startsWith("true")) {
+    resultNum = 1;
+  } else if (result?.startsWith("false")) {
+    resultNum = 2;
+  }
+  return resultNum;
+};
 
-  const newsArticles = await checkThroughNewsAPI(searchTerm);
-  // return the prototype of the newsArticles
-  console.log(newsArticles);
+// (async () => {
+//   const args = process.argv.slice(2);
+//   const searchTerm = args[0];
 
-  // console.log(newsArticles);
-})();
+//   const newsArticles = await checkThroughNewsAPI(searchTerm);
+//   // return the prototype of the newsArticles
+//   console.log(newsArticles);
+
+//   // console.log(newsArticles);
+// })();
+
+export { checkThroughNewsAPI };

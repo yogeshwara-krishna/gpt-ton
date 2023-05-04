@@ -24,7 +24,7 @@ export async function fetchTweets(url: string): Promise<string[]> {
   await scrollPageToBottom(page as any, {
     size: 500,
     delay: 250,
-    stepsLimit: 5,
+    stepsLimit: 10,
   });
   await page.waitForTimeout(3000);
   const content = await page.content();
@@ -45,7 +45,7 @@ async function getResultThroughTweets(searchTerm: string) {
   const searchQuery = await queryGPT(
     "Give a twitter search query for finding the result of the following: " +
       searchTerm +
-      ". Give exact query to type in twitter search bar. Nothing else."
+      ". Give exact query to type in twitter search bar. Don't search for long things. It has to be small."
   );
   console.log("Search query:", searchQuery);
   const tweets = await fetchTweets(
@@ -56,7 +56,14 @@ async function getResultThroughTweets(searchTerm: string) {
   console.log("Summary:", tweetSummary);
   // check if res starts with true or false or ns
   const result = tweetSummary?.split("\n")[0].toLowerCase();
-  return result;
+  let resultNum = 3;
+  if (result?.startsWith("true")) {
+    resultNum = 1;
+  } else if (result?.startsWith("false")) {
+    resultNum = 2;
+  }
+
+  return resultNum;
 }
 
 async function checkEvent(

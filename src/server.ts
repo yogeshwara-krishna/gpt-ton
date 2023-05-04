@@ -3,6 +3,8 @@ import { createEvent, finishEvent } from "./utils/tonUtils";
 import { getResultThroughTweets } from "./utils/tweetUtils";
 import { queryGPT, sleep } from "./utils/openAIUtils";
 import { config } from "./config";
+import { checkThroughNewsAPI } from "./utils/newsApiUtils";
+import { checkThroughGoogle } from "./utils/googleSearch";
 require("dotenv").config();
 
 async function check(searchTerm: string) {
@@ -40,15 +42,19 @@ async function check(searchTerm: string) {
   }
 
   try {
-    const result = await getResultThroughTweets(searchTerm);
-    let resultNum = 0;
-    if (result?.startsWith("true")) {
-      resultNum = 1;
-    } else if (result?.startsWith("false")) {
-      resultNum = 2;
-    } else if (result?.startsWith("ns")) {
-      resultNum = 3;
+    const resultTweets = await getResultThroughTweets(searchTerm);
+    let resultNum = resultTweets;
+    if (resultNum === 3) {
+      console.log("Didn't get a result from tweets. Trying newsAPI");
+      const resultNews = await checkThroughNewsAPI(searchTerm);
+      resultNum = resultNews;
     }
+    if (resultNum === 3) {
+      console.log("Didn't get a result from newsAPI. Trying Google Search");
+      const resultGoogle = await checkThroughGoogle(searchTerm);
+      resultNum = resultGoogle;
+    }
+
     if (resultNum != 3) {
       console.log("Result is ", resultNum);
       console.log("Finishing event with result: ", resultNum);

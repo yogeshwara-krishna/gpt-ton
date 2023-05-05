@@ -19,10 +19,65 @@ async function check(searchTerm: string) {
   }
 }
 
+async function ambiguityCheck(searchTerm: string) {
+  try {
+    let gptResponse: any = await queryGPT(
+      `In group chats the message can be anything, your job is to explain the potential of the message to be turned into a bet between two people. You must generate one of three types of responses:
+      1. Irrelevant/Junk Message, Code 0
+      2. Ambiguous message, code 1, also return a confirmation message asking the user to confirm the bet
+      3. Unambiguous bet like message, code 2
+      Only return a JSON string response of type {"code":number,"message":string}, include message only for case 2. Nothing else
+      Return a response for this message: ${searchTerm}
+      `
+    );
+    gptResponse =JSON.parse(gptResponse)
+    return gptResponse;
+  } catch (er) {
+    console.log("Error in ambiguity check", er);
+    return { code: -1 };
+  }
+}
+
+async function dataSourcePred(searchTerm: string) {
+  try {
+    let gptResponse: any = await queryGPT(
+      `A message like betting on an event that exists, this message is random and may contain incorrect information. Your task is to predict the best data source from the given list, which can validate the condition:
+        1. Google Search API which has google search results, Code 1
+        2. Twitter Recent Tweets, Code 2
+        3. News API that returns news articles based on search queries, code 3
+
+        return json response nothing else, that too must be of type: {"code": number,"reason": "why do you think best among others for this message"}
+        Return a response for this message: ${searchTerm}
+      `
+    );
+    gptResponse =JSON.parse(gptResponse)
+    return gptResponse;
+  } catch (er) {
+    console.log("Error in data source check", er);
+    return { code: -1 };
+  }
+}
+
 (async () => {
   const args = process.argv.slice(2);
   const searchTerm = args[0];
 
+  const ambiguity_res: any = await ambiguityCheck(searchTerm);
+
+  console.log(ambiguity_res);
+
+  if (ambiguity_res.code === 0) {
+    // junk message, skip
+  } else if (ambiguity_res.code === 1) {
+    // ambiguous message, ask user for clarification, clarification message: ambiguity_res.message
+  } else if (ambiguity_res.code === 2) {
+    // bet like message, go ahead
+  }
+
+  // code to handle data source based on gpt response
+  const dataSourcePred_res: any = await dataSourcePred(searchTerm)
+  console.log(dataSourcePred_res);
+  
   console.log("Creating event for ", searchTerm);
   let res: any;
   if (config.tonMnemonic1 && config.tonMnemonic2) {

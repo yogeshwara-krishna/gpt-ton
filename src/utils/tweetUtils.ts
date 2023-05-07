@@ -72,7 +72,7 @@ async function checkEvent(
 ): Promise<string | undefined> {
   const allTweets = tweets.join("\n");
   const summary = await queryGPT(
-    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${allTweets}\n\.`
+    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/ official announcement. If you can't tell from the information, say NS. Information: \n\n${allTweets}\n\.`
   );
   return summary;
 }

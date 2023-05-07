@@ -30,7 +30,7 @@ async function ambiguityCheck(searchTerm: string) {
       Return a response for this message: ${searchTerm}
       `
     );
-    gptResponse =JSON.parse(gptResponse)
+    gptResponse = JSON.parse(gptResponse);
     return gptResponse;
   } catch (er) {
     console.log("Error in ambiguity check", er);
@@ -50,7 +50,7 @@ async function dataSourcePred(searchTerm: string) {
         Return a response for this message: ${searchTerm}
       `
     );
-    gptResponse =JSON.parse(gptResponse)
+    gptResponse = JSON.parse(gptResponse);
     return gptResponse;
   } catch (er) {
     console.log("Error in data source check", er);
@@ -58,6 +58,35 @@ async function dataSourcePred(searchTerm: string) {
   }
 }
 
+async function matchToExistingBets(searchTerm: string) {
+  try {
+    const jsonData = fs.readFileSync("bets.json", "utf-8");
+    const existingEvents = JSON.parse(jsonData);
+
+    const messages = existingEvents
+      .map((item: any, index: number) => `${index}. ${item.message}`)
+      .join(", ");
+
+    let gptResponse: any = await queryGPT(`
+    Given a list of messages in the format "index. message" (converted into a string), and a new input message, identify whether the new message matches any of the messages in the list. More clearly, all these messages have potential to get converted into bet. Your job is to check whether the new message is already similar to the ones already in the list.
+    Output:
+    If the input message matches any of the messages in the list, return the index of the matching message.
+    If there is no match, return -1.
+    Response should be of the json format {"index": number}, Nothing else.
+    Here is the list: ${messages}
+    Input message: ${searchTerm}
+  `);
+
+    gptResponse = JSON.parse(gptResponse);
+
+    return gptResponse.index !== -1
+      ? existingEvents[gptResponse.index].eventAddress
+      : -1;
+  } catch (er) {
+    console.log("Error in matching to existing bets", er);
+    return -1;
+  }
+}
 (async () => {
   const args = process.argv.slice(2);
   const searchTerm = args[0];
@@ -74,10 +103,19 @@ async function dataSourcePred(searchTerm: string) {
     // bet like message, go ahead
   }
 
+  // code to match the new message to existing bets
+  const match_res: any = await matchToExistingBets(searchTerm);
+  console.log(match_res);
+  if (match_res !== -1) {
+    // since its not -1 then match_res is the eventAddress itself, place the bet on it
+  } else {
+    // no match found
+  }
+
   // code to handle data source based on gpt response
-  const dataSourcePred_res: any = await dataSourcePred(searchTerm)
+  const dataSourcePred_res: any = await dataSourcePred(searchTerm);
   console.log(dataSourcePred_res);
-  
+
   console.log("Creating event for ", searchTerm);
   let res: any;
   if (config.tonMnemonic1 && config.tonMnemonic2) {

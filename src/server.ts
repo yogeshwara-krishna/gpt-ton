@@ -5,6 +5,7 @@ import { queryGPT, sleep } from "./utils/openAIUtils";
 import { config } from "./config";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
+import { createBotEvent, findAllBotEvents } from "./db/botEvents";
 
 async function check(searchTerm: string) {
   // queryGPT to classify the event whether it's related to politics, news or sports
@@ -59,13 +60,7 @@ async function dataSourcePred(searchTerm: string) {
 
 async function matchToExistingBets(searchTerm: string) {
   try {
-    // check for a file named bets.json in the same directory
-    if (!fs.existsSync("bets.json")) {
-      fs.writeFileSync("bets.json", "[]");
-    }
-    const jsonData = fs.readFileSync("bets.json", "utf-8");
-    const existingEvents = JSON.parse(jsonData);
-
+    const existingEvents: any = await findAllBotEvents();
     const messages = existingEvents
       .map((item: any, index: number) => `${index}. ${item.message}`)
       .join(", ");
@@ -82,11 +77,30 @@ async function matchToExistingBets(searchTerm: string) {
 
     gptResponse = JSON.parse(gptResponse);
 
-    return gptResponse.index !== -1
-      ? existingEvents[gptResponse.index].eventAddress
-      : -1;
+    return gptResponse.index !== -1 ? existingEvents[gptResponse.index] : -1;
   } catch (er) {
     console.log("Error in matching to existing bets", er);
+    return -1;
+  }
+}
+
+async function getEventTeams(searchTerm: string) {
+  try {
+    let gptResponse: any = await queryGPT(`
+    Your job is to provide two conditions based on a chat message that could be converted into a bet. Return a JSON string of the form {"team1":string, "team2": string}, where "team1" and "team2" are the two opposing conditions.
+
+    Response should be JSON only, NOTHING ELSE that too of specified format - example JSON string: {"team1": "Australia", "team2": "India"}
+    
+    Chat message: ${searchTerm}`);
+
+    gptResponse = JSON.parse(gptResponse);
+
+    return {
+      team1: gptResponse.team1,
+      team2: gptResponse.team2,
+    };
+  } catch (er) {
+    console.log("Error in getting event teams", er);
     return -1;
   }
 }
@@ -113,7 +127,12 @@ async function matchToExistingBets(searchTerm: string) {
   const match_res: any = await matchToExistingBets(searchTerm);
   console.log(match_res);
   if (match_res !== -1) {
-    // since its not -1 then match_res is the eventAddress itself, place the bet on it
+    // since its not -1 then match_res is the event itself, place the bet on it
+    const betUrl = `https://prophecypulse.web.app/event?id=${
+      match_res.id
+    }&team1=${encodeURIComponent(match_res.team1)}&team2=${encodeURIComponent(
+      match_res.team2
+    )}&category=gptBet`;
   } else {
     // no match found
   }
@@ -162,6 +181,26 @@ async function matchToExistingBets(searchTerm: string) {
           "with address: ",
           res?.data.address
         );
+      }
+      // write event to the firebase collection
+      const eventTeams: any = await getEventTeams(searchTerm);
+
+      if (eventTeams !== -1) {
+        // create a event in firebase with the event address
+        const botEvent: any = await createBotEvent(
+          searchTerm,
+          eventTeams.team1,
+          eventTeams.team2,
+          res?.data.address
+        );
+        const betUrl = `https://prophecypulse.web.app/event?id=${
+          botEvent.id
+        }&team1=${encodeURIComponent(
+          botEvent.team1
+        )}&team2=${encodeURIComponent(botEvent.team2)}&category=gptBet`;
+      } else {
+        // error from gpt response
+        // quit
       }
     }
   } catch (error) {

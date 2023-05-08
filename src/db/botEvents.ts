@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+// @ts-ignore
 import { db } from "./firebase";
 
 interface BotEvent {
@@ -17,7 +17,7 @@ export async function createBotEvent(
   eventAddress: string
 ) {
   try {
-    const botEventsCollection = collection(db, "botEvents");
+    const botEventsCollection = db.collection("botEvents");
     const newEvent = {
       message: message,
       createdAt: new Date().toISOString(),
@@ -25,7 +25,7 @@ export async function createBotEvent(
       team2: team2,
       eventAddress: eventAddress,
     };
-    const docRef = await addDoc(botEventsCollection, newEvent);
+    const docRef = await botEventsCollection.add(newEvent);
     console.log(`Bot event created with ID: ${docRef.id}`);
     return { ...newEvent, id: docRef.id };
   } catch (er) {
@@ -35,9 +35,8 @@ export async function createBotEvent(
 
 export async function findAllBotEvents() {
   try {
-    const botEventsCollection = collection(db, "botEvents");
-    const q = query(botEventsCollection);
-    const querySnapshot = await getDocs(q);
+    const botEventsCollection = db.collection("botEvents");
+    const querySnapshot = await botEventsCollection.get();
     const botEvents: BotEvent[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
@@ -50,9 +49,9 @@ export async function findAllBotEvents() {
         id: doc.id,
       });
     });
-    console.log(botEvents);
     return botEvents;
   } catch (er) {
-    console.log("Error finding all bot events", er)
+    console.log("Error finding all bot events", er);
   }
 }
+

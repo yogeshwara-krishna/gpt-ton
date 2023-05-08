@@ -5,7 +5,6 @@ import { queryGPT, sleep } from "./utils/openAIUtils";
 import { config } from "./config";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
-require("dotenv").config();
 
 async function check(searchTerm: string) {
   // queryGPT to classify the event whether it's related to politics, news or sports
@@ -60,6 +59,10 @@ async function dataSourcePred(searchTerm: string) {
 
 async function matchToExistingBets(searchTerm: string) {
   try {
+    // check for a file named bets.json in the same directory
+    if (!fs.existsSync("bets.json")) {
+      fs.writeFileSync("bets.json", "[]");
+    }
     const jsonData = fs.readFileSync("bets.json", "utf-8");
     const existingEvents = JSON.parse(jsonData);
 
@@ -138,12 +141,12 @@ async function matchToExistingBets(searchTerm: string) {
     const resultTweets = await getResultThroughTweets(searchTerm);
     let resultNum = resultTweets;
     if (resultNum === 3) {
-      console.log("Didn't get a result from tweets. Trying newsAPI");
+      console.log("Didn't get a result from tweets. Trying newsAPI\n");
       const resultNews = await checkThroughNewsAPI(searchTerm);
       resultNum = resultNews;
     }
     if (resultNum === 3) {
-      console.log("Didn't get a result from newsAPI. Trying Google Search");
+      console.log("Didn't get a result from newsAPI. Trying Google Search\n");
       const resultGoogle = await checkThroughGoogle(searchTerm);
       resultNum = resultGoogle;
     }

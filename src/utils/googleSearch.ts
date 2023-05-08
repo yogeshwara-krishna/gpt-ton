@@ -6,15 +6,20 @@ const API_KEY = config.googleApiKey;
 const SEARCH_ENGINE_ID = config.googleSearchEngineId;
 
 const queryGoogle = async (searchTerm: string) => {
-  const url = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${SEARCH_ENGINE_ID}&q=${encodeURIComponent(
-    searchTerm
-  )}&num=20`;
-  const res = await axios.get(url);
-  const items = res.data.items;
-  if (!items) {
-    throw new Error("No items found");
+  try {
+    const url = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${SEARCH_ENGINE_ID}&q=${encodeURIComponent(
+      searchTerm
+    )}`;
+    const res = await axios.get(url);
+    const items = res.data.items;
+    if (!items) {
+      throw new Error("No items found");
+    }
+    return items;
+  } catch (er) {
+    console.log("Error in google search", er);
+    return [];
   }
-  return items;
 };
 
 function consolidateResults(items: any[]) {
@@ -50,5 +55,12 @@ const checkThroughGoogle = async (searchTerm: string) => {
   return resultNum;
 };
 
+
+(async () => {
+  const args = process.argv.slice(2);
+  const searchTerm = args[0];
+  const resultNum = await checkThroughGoogle(searchTerm);
+  console.log(resultNum);
+})();
 
 export { checkThroughGoogle };

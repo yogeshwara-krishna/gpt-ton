@@ -90,10 +90,12 @@ async function matchToExistingBets(searchTerm: string) {
     return -1;
   }
 }
+
 (async () => {
   const args = process.argv.slice(2);
   const searchTerm = args[0];
 
+  console.log("Checking for ambiguity in message: ", searchTerm);
   const ambiguity_res: any = await ambiguityCheck(searchTerm);
 
   console.log(ambiguity_res);
@@ -107,6 +109,7 @@ async function matchToExistingBets(searchTerm: string) {
   }
 
   // code to match the new message to existing bets
+  console.log("Checking for a match in existing bets: ", searchTerm);
   const match_res: any = await matchToExistingBets(searchTerm);
   console.log(match_res);
   if (match_res !== -1) {
@@ -114,10 +117,6 @@ async function matchToExistingBets(searchTerm: string) {
   } else {
     // no match found
   }
-
-  // code to handle data source based on gpt response
-  const dataSourcePred_res: any = await dataSourcePred(searchTerm);
-  console.log(dataSourcePred_res);
 
   console.log("Creating event for ", searchTerm);
   let res: any;

@@ -55,12 +55,4 @@ const checkThroughGoogle = async (searchTerm: string) => {
   return resultNum;
 };
 
-
-(async () => {
-  const args = process.argv.slice(2);
-  const searchTerm = args[0];
-  const resultNum = await checkThroughGoogle(searchTerm);
-  console.log(resultNum);
-})();
-
 export { checkThroughGoogle };

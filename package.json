@@ -19,6 +19,7 @@
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "firebase": "^9.21.0",
     "openai": "^3.2.1",
     "puppeteer": "^19.11.0",
     "puppeteer-autoscroll-down": "^1.1.2",

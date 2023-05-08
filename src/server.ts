@@ -147,9 +147,10 @@ async function matchToExistingBets(searchTerm: string) {
     if (resultNum === 3) {
       console.log("Didn't get a result from newsAPI. Trying Google Search\n");
       const resultGoogle = await checkThroughGoogle(searchTerm);
+      console.log("Result from google is ", resultGoogle);
       resultNum = resultGoogle;
     }
-
+    console.log("Result is ", resultNum);
     if (resultNum != 3) {
       console.log("Result is ", resultNum);
       console.log("Finishing event with result: ", resultNum);

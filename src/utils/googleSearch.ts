@@ -42,10 +42,11 @@ function consolidateResults(items: any[]) {
 const checkThroughGoogle = async (searchTerm: string) => {
   const items = await queryGoogle(searchTerm);
   const consolidatedResponse = consolidateResults(items);
-  const result = await queryGPT(
+  const googleSearchSummary = await queryGPT(
     `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${consolidatedResponse}\n\.`
   );
-  console.log("Summary:", result);
+  console.log("Summary:", googleSearchSummary);
+  const result = googleSearchSummary?.toLowerCase();
   let resultNum = 3;
   if (result?.startsWith("true")) {
     resultNum = 1;

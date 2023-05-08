@@ -37,10 +37,11 @@ async function consolidateNewsAPI(searchTerm: string): Promise<any> {
 
 const checkThroughNewsAPI = async (searchTerm: string) => {
   const consolidatedResponse = await consolidateNewsAPI(searchTerm);
-  const result = await queryGPT(
+  const newsAPISummary = await queryGPT(
     `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${consolidatedResponse}\n\.`
   );
-  console.log("Summary:", result);
+  console.log("Summary:", newsAPISummary);
+  const result = newsAPISummary?.toLowerCase();
   let resultNum = 3
   if (result?.startsWith("true")) {
     resultNum = 1;

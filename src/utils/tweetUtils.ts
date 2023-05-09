@@ -8,7 +8,6 @@ const baseURL = "https://twitter.com/search?q=";
 export async function fetchTweets(url: string): Promise<string[]> {
   const browser = await puppeteer.launch({
     userDataDir: "./user_data",
-    headless: false,
   });
   const page = await browser.newPage();
   await page.setUserAgent(

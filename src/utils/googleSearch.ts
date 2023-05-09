@@ -47,7 +47,6 @@ const checkThroughGoogle = async (searchTerm: string, ctx?:any) => {
     return 3;
   }
   console.log("Searching for news articles with query: ", searchQuery);
-  ctx.reply("Searching for news articles with query: " + searchQuery);
   const items = await queryGoogle(searchQuery);
   const consolidatedResponse = consolidateResults(items);
   const googleSearchSummary = await queryGPT(

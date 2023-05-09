@@ -9,7 +9,7 @@ const openai = new OpenAIApi(configuration);
 
 export const queryGPT = async (message: string) => {
   const res = await openai.createChatCompletion({
-    model: "gpt-4",
+    model: "gpt-3.5-turbo",
     messages: [
       {
         role: "user",

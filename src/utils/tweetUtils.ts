@@ -48,7 +48,6 @@ async function getResultThroughTweets(searchTerm: string, ctx?: any) {
       ". Give exact query to type in twitter search bar. Don't search for long things. It has to be small."
   );
   console.log("Search query:", searchQuery);
-  ctx?.reply("Search query: " + searchQuery);
   const tweets = await fetchTweets(
     baseURL + encodeURIComponent(searchQuery || searchTerm)
   );

@@ -10,7 +10,7 @@ const bot = new Telegraf(config.botToken);
 
 bot.start((ctx) =>
   ctx.reply(
-    "Welcome to Future Wager Bot! \nType /help to see the list of commands"
+    "Welcome to ProphecyPulse Bot! I'm here to help you place bets on events and check their outcomes. Type /help to see the list of available commands"
   )
 );
 
@@ -32,7 +32,7 @@ bot.command("bet", async (ctx) => {
       `This message is ambiguous, is this what you want to place a bet on: ${ambiguity_res.message}? If yes, type /bet ${ambiguity_res.message}.`
     );
   } else if (ambiguity_res.code === 2) {
-    ctx.reply("This is a bet like message, going ahead with the bet");
+    ctx.reply("No ambiguity found. Placing your bet...");
     // create a file with a unique id and store the bet in it
     const betId = Math.random().toString(36).substring(7);
 
@@ -47,9 +47,10 @@ bot.command("bet", async (ctx) => {
       id: betId,
     };
 
-    ctx.reply(
-      `Your bet has been placed. Your bet id is ${betId}. You can check the result of your bet by typing /check ${betId}`
-    );
+    ctx.replyWithHTML(
+      `Your bet has been placed. Your bet id is <code>${betId}</code>. You can check the result of your bet by typing <code>/check ${betId}</code>`
+    );   
+
     fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
   }
 });
@@ -66,24 +67,18 @@ bot.command("check", async (ctx) => {
   if (betDataJson[id]) {
     const searchTerm = betDataJson[id].bet;
     try {
-      ctx.reply(
-        "Searching for the result of " +
-          searchTerm +
-          " through Google, NewsAPI and Twitter\n"
-      );
+      ctx.reply("Searching for the result of " + searchTerm);
       const resultGoogle = await checkThroughGoogle(searchTerm, ctx);
       let resultNum = resultGoogle;
 
       if (resultNum === 3) {
         console.log("Didn't get a result from Google Search. Trying newsAPI\n");
-        ctx.reply("Didn't get a result from Google Search. Trying newsAPI\n");
         const resultNews = await checkThroughNewsAPI(searchTerm, ctx);
         resultNum = resultNews;
       }
 
       if (resultNum === 3) {
         console.log("Didn't get a result from newsAPI. Trying Twitter\n");
-        ctx.reply("Didn't get a result from newsAPI. Trying Twitter\n");
         const resultTweets = await getResultThroughTweets(searchTerm, ctx);
         resultNum = resultTweets;
       }
@@ -92,8 +87,7 @@ bot.command("check", async (ctx) => {
       if (resultNum != 3) {
         console.log("Result is ", resultNum);
         console.log("Finishing event with result: ", resultNum);
-        ctx.reply("Result is " + resultNum);
-        ctx.reply("Finishing event with result: " + resultNum);
+        ctx.reply("Updating the result of the event\n");
         if (config.tonMnemonic1 && config.tonMnemonic2) {
           // finishEvent(res?.data.address as any, 1);
           // console.log(
@@ -102,6 +96,7 @@ bot.command("check", async (ctx) => {
           //   "with address: ",
           //   res?.data.address
           // );
+          ctx.reply("Event updated successfully");
         }
       }
     } catch (err) {
@@ -115,13 +110,12 @@ bot.command("check", async (ctx) => {
 bot.command("help", (ctx) => {
   ctx.reply(
     "Here are the available commands:\n\n" +
-    "/start - Sends a welcome message\n\n" +
-    "/bet <search term> - Places a bet on the given search term. For example: /bet it will rain tomorrow\n\n" +
-    "/check <bet id> - Checks the result of a previously placed bet with the given id. For example: /check abc123\n\n" +
-    "/help - Shows the list of commands"
+      "/start - Sends a welcome message and brief introduction\n\n" +
+      "/bet <bet proposition> - Places a bet on the given proposition. For example: /bet it will rain tomorrow, /bet Djokovic will loss the first set in his next game, /bet Modi will announce a more limited reform than the one he originally proposed\n\n" +
+      "/check <bet id> - Checks the result of a previously placed bet using the provided bet ID. For example: /check abc123\n\n" +
+      "/help - Shows the list of commands"
   );
 });
-
 
 bot.launch();
 

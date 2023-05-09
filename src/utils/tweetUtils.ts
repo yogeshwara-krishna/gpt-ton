@@ -7,8 +7,8 @@ const baseURL = "https://twitter.com/search?q=";
 
 export async function fetchTweets(url: string): Promise<string[]> {
   const browser = await puppeteer.launch({
-    headless: false,
     userDataDir: "./user_data",
+    headless: false,
   });
   const page = await browser.newPage();
   await page.setUserAgent(
@@ -41,19 +41,21 @@ export async function fetchTweets(url: string): Promise<string[]> {
   return tweets;
 }
 
-async function getResultThroughTweets(searchTerm: string) {
+async function getResultThroughTweets(searchTerm: string, ctx?: any) {
   const searchQuery = await queryGPT(
     "Give a twitter search query for finding the result of the following: " +
       searchTerm +
       ". Give exact query to type in twitter search bar. Don't search for long things. It has to be small."
   );
   console.log("Search query:", searchQuery);
+  ctx?.reply("Search query: " + searchQuery);
   const tweets = await fetchTweets(
     baseURL + encodeURIComponent(searchQuery || searchTerm)
   );
   console.log("Fetched tweets:", tweets);
   const tweetSummary = await checkEvent(tweets, searchTerm);
   console.log("Summary:", tweetSummary);
+  ctx?.reply("Summary: \n" + tweetSummary);
   // check if res starts with true or false or ns
   const result = tweetSummary?.split("\n")[0].toLowerCase();
   let resultNum = 3;
@@ -72,7 +74,9 @@ async function checkEvent(
 ): Promise<string | undefined> {
   const allTweets = tweets.join("\n");
   const summary = await queryGPT(
-    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/ official announcement. If you can't tell from the information, say NS. Information: \n\n${allTweets}\n\.`
+    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure, type NS i.e not sure. 
+    Your response should be in the following format: \n\nTrue/False/NS: Summary\n\n
+    Information: \n\n${allTweets}\n\.`
   );
   return summary;
 }

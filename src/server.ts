@@ -19,13 +19,12 @@ async function check(searchTerm: string) {
   }
 }
 
-async function ambiguityCheck(searchTerm: string) {
+export async function ambiguityCheck(searchTerm: string) {
   try {
     let gptResponse: any = await queryGPT(
       `In group chats the message can be anything, your job is to explain the potential of the message to be turned into a bet between two people. You must generate one of three types of responses:
       1. Irrelevant/Junk Message, Code 0
-      2. Ambiguous message, code 1, also return a confirmation message asking the user to confirm the bet
-      3. Unambiguous bet like message, code 2
+      2. Unambiguous bet like message, code 2. Could be "It will rain tomorrow", "Trump will win the election", "India will win the match"
       Only return a JSON string response of type {"code":number,"message":string}, include message only for case 2. Nothing else
       Return a response for this message: ${searchTerm}
       `
@@ -38,7 +37,7 @@ async function ambiguityCheck(searchTerm: string) {
   }
 }
 
-async function dataSourcePred(searchTerm: string) {
+export async function dataSourcePred(searchTerm: string) {
   try {
     let gptResponse: any = await queryGPT(
       `A message like betting on an event that exists, this message is random and may contain incorrect information. Your task is to predict the best data source from the given list, which can validate the condition:
@@ -58,7 +57,7 @@ async function dataSourcePred(searchTerm: string) {
   }
 }
 
-async function matchToExistingBets(searchTerm: string) {
+export async function matchToExistingBets(searchTerm: string) {
   try {
     const existingEvents: any = await findAllBotEvents();
     const messages = existingEvents
@@ -84,7 +83,7 @@ async function matchToExistingBets(searchTerm: string) {
   }
 }
 
-async function getEventTeams(searchTerm: string) {
+export async function getEventTeams(searchTerm: string) {
   try {
     let gptResponse: any = await queryGPT(`
     Your job is to provide two conditions based on a chat message that could be converted into a bet. Return a JSON string of the form {"team1":string, "team2": string}, where "team1" and "team2" are the two opposing conditions.
@@ -105,105 +104,105 @@ async function getEventTeams(searchTerm: string) {
   }
 }
 
-(async () => {
-  const args = process.argv.slice(2);
-  const searchTerm = args[0];
+// (async () => {
+//   const args = process.argv.slice(2);
+//   const searchTerm = args[0];
 
-  console.log("Checking for ambiguity in message: ", searchTerm);
-  const ambiguity_res: any = await ambiguityCheck(searchTerm);
+//   console.log("Checking for ambiguity in message: ", searchTerm);
+//   const ambiguity_res: any = await ambiguityCheck(searchTerm);
 
-  console.log(ambiguity_res);
+//   console.log(ambiguity_res);
 
-  if (ambiguity_res.code === 0) {
-    // junk message, skip
-  } else if (ambiguity_res.code === 1) {
-    // ambiguous message, ask user for clarification, clarification message: ambiguity_res.message
-  } else if (ambiguity_res.code === 2) {
-    // bet like message, go ahead
-  }
+//   if (ambiguity_res.code === 0) {
+//     // junk message, skip
+//   } else if (ambiguity_res.code === 1) {
+//     // ambiguous message, ask user for clarification, clarification message: ambiguity_res.message
+//   } else if (ambiguity_res.code === 2) {
+//     // bet like message, go ahead
+//   }
 
-  // code to match the new message to existing bets
-  console.log("Checking for a match in existing bets: ", searchTerm);
-  const match_res: any = await matchToExistingBets(searchTerm);
-  console.log(match_res);
-  if (match_res !== -1) {
-    // since its not -1 then match_res is the event itself, place the bet on it
-    const betUrl = `https://prophecypulse.web.app/event?id=${
-      match_res.id
-    }&team1=${encodeURIComponent(match_res.team1)}&team2=${encodeURIComponent(
-      match_res.team2
-    )}&category=gptBet`;
-  } else {
-    // no match found
-  }
+//   // code to match the new message to existing bets
+//   console.log("Checking for a match in existing bets: ", searchTerm);
+//   const match_res: any = await matchToExistingBets(searchTerm);
+//   console.log(match_res);
+//   if (match_res !== -1) {
+//     // since its not -1 then match_res is the event itself, place the bet on it
+//     const betUrl = `https://prophecypulse.web.app/event?id=${
+//       match_res.id
+//     }&team1=${encodeURIComponent(match_res.team1)}&team2=${encodeURIComponent(
+//       match_res.team2
+//     )}&category=gptBet`;
+//   } else {
+//     // no match found
+//   }
 
-  console.log("Creating event for ", searchTerm);
-  let res: any;
-  if (config.tonMnemonic1 && config.tonMnemonic2) {
-    res = await createEvent();
-    console.log(res);
-  } else {
-    console.log("No MNEOMNICS found in .env file");
-    console.info("Continuing without creating event");
-  }
+//   console.log("Creating event for ", searchTerm);
+//   let res: any;
+//   if (config.tonMnemonic1 && config.tonMnemonic2) {
+//     res = await createEvent();
+//     console.log(res);
+//   } else {
+//     console.log("No MNEOMNICS found in .env file");
+//     console.info("Continuing without creating event");
+//   }
 
-  // check if there's a user_data folder if there's not console
-  if (!fs.existsSync("./user_data")) {
-    console.log(
-      "Looks like it's your first time running this script. Please login to twitter and then close the browser. Then run this script again."
-    );
-    await sleep(1000);
-  }
+//   // check if there's a user_data folder if there's not console
+//   if (!fs.existsSync("./user_data")) {
+//     console.log(
+//       "Looks like it's your first time running this script. Please login to twitter and then close the browser. Then run this script again."
+//     );
+//     await sleep(1000);
+//   }
 
-  try {
-    const resultTweets = await getResultThroughTweets(searchTerm);
-    let resultNum = resultTweets;
-    if (resultNum === 3) {
-      console.log("Didn't get a result from tweets. Trying newsAPI\n");
-      const resultNews = await checkThroughNewsAPI(searchTerm);
-      resultNum = resultNews;
-    }
-    if (resultNum === 3) {
-      console.log("Didn't get a result from newsAPI. Trying Google Search\n");
-      const resultGoogle = await checkThroughGoogle(searchTerm);
-      console.log("Result from google is ", resultGoogle);
-      resultNum = resultGoogle;
-    }
-    console.log("Result is ", resultNum);
-    if (resultNum != 3) {
-      console.log("Result is ", resultNum);
-      console.log("Finishing event with result: ", resultNum);
-      if (config.tonMnemonic1 && config.tonMnemonic2) {
-        finishEvent(res?.data.address as any, 1);
-        console.log(
-          "Finished event",
-          searchTerm,
-          "with address: ",
-          res?.data.address
-        );
-      }
-      // write event to the firebase collection
-      const eventTeams: any = await getEventTeams(searchTerm);
+//   try {
+//     const resultTweets = await getResultThroughTweets(searchTerm);
+//     let resultNum = resultTweets;
+//     if (resultNum === 3) {
+//       console.log("Didn't get a result from tweets. Trying newsAPI\n");
+//       const resultNews = await checkThroughNewsAPI(searchTerm);
+//       resultNum = resultNews;
+//     }
+//     if (resultNum === 3) {
+//       console.log("Didn't get a result from newsAPI. Trying Google Search\n");
+//       const resultGoogle = await checkThroughGoogle(searchTerm);
+//       console.log("Result from google is ", resultGoogle);
+//       resultNum = resultGoogle;
+//     }
+//     console.log("Result is ", resultNum);
+//     if (resultNum != 3) {
+//       console.log("Result is ", resultNum);
+//       console.log("Finishing event with result: ", resultNum);
+//       if (config.tonMnemonic1 && config.tonMnemonic2) {
+//         finishEvent(res?.data.address as any, 1);
+//         console.log(
+//           "Finished event",
+//           searchTerm,
+//           "with address: ",
+//           res?.data.address
+//         );
+//       }
+//       // write event to the firebase collection
+//       const eventTeams: any = await getEventTeams(searchTerm);
 
-      if (eventTeams !== -1) {
-        // create a event in firebase with the event address
-        const botEvent: any = await createBotEvent(
-          searchTerm,
-          eventTeams.team1,
-          eventTeams.team2,
-          res?.data.address
-        );
-        const betUrl = `https://prophecypulse.web.app/event?id=${
-          botEvent.id
-        }&team1=${encodeURIComponent(
-          botEvent.team1
-        )}&team2=${encodeURIComponent(botEvent.team2)}&category=gptBet`;
-      } else {
-        // error from gpt response
-        // quit
-      }
-    }
-  } catch (error) {
-    console.error("Error:", error);
-  }
-})();
+//       if (eventTeams !== -1) {
+//         // create a event in firebase with the event address
+//         const botEvent: any = await createBotEvent(
+//           searchTerm,
+//           eventTeams.team1,
+//           eventTeams.team2,
+//           res?.data.address
+//         );
+//         const betUrl = `https://prophecypulse.web.app/event?id=${
+//           botEvent.id
+//         }&team1=${encodeURIComponent(
+//           botEvent.team1
+//         )}&team2=${encodeURIComponent(botEvent.team2)}&category=gptBet`;
+//       } else {
+//         // error from gpt response
+//         // quit
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Error:", error);
+//   }
+// })();

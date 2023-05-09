@@ -4,3 +4,4 @@ user_data
 .env
 config.ts
 firebase.config.json
+bets_store.json

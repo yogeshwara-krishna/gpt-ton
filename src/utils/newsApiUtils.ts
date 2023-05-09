@@ -35,12 +35,15 @@ async function consolidateNewsAPI(searchTerm: string): Promise<any> {
   return consolidatedResponse.substring(0, 1024).toLowerCase();
 }
 
-const checkThroughNewsAPI = async (searchTerm: string) => {
+const checkThroughNewsAPI = async (searchTerm: string, ctx?: any) => {
   const consolidatedResponse = await consolidateNewsAPI(searchTerm);
   const newsAPISummary = await queryGPT(
-    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement. Information: \n\n${consolidatedResponse}\n\.`
+    `Tell me if ${searchTerm} is currently true or false from the information given. If you are not sure or don't know, type NS i.e not sure. Also, tell why. Don't check for authenticity/announcement.
+    Your response should be in the following format: \n\nTrue/False/NS: Summary\n\n
+    Information: \n\n${consolidatedResponse}\n\.`
   );
   console.log("Summary:", newsAPISummary);
+  ctx?.reply("Summary: " + newsAPISummary);
   const result = newsAPISummary?.toLowerCase();
   let resultNum = 3
   if (result?.startsWith("true")) {

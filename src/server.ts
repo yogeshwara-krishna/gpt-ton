@@ -104,6 +104,24 @@ export async function getEventTeams(searchTerm: string) {
   }
 }
 
+export async function checkAllSportsEvent(searchTerm: string) {
+  try {
+    let gptResponse: any = await queryGPT(`
+Given a chat message "${searchTerm}" that contains a sports wager, identify if it pertains to soccer, cricket, or basketball. If yes, return a JSON string with code=1, type=one of the three sports, and team=the name of any one team involved in the game. If no, return code=0. 
+
+The JSON string should be in the following format: {code: number, type: enum(soccer/cricket/basketball), team: team name (it should be full name, do not abbreviate)}.
+Retrun only the json string, Nothing else.`);
+
+    gptResponse = JSON.parse(gptResponse);
+
+    return gptResponse.code === 0
+      ? -1
+      : { category: gptResponse.type.toLowerCase(), query: gptResponse.team };
+  } catch (er) {
+    console.log("Error in checking sports event", er);
+    return -1;
+  }
+}
 // (async () => {
 //   const args = process.argv.slice(2);
 //   const searchTerm = args[0];

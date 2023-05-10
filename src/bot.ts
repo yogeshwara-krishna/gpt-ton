@@ -1,12 +1,13 @@
 import { Telegraf } from "telegraf";
 import { config } from "./config";
 import fs from "fs";
-import { ambiguityCheck } from "./server";
+import { ambiguityCheck, checkAllSportsEvent } from "./server";
 import { getResultThroughTweets } from "./utils/tweetUtils";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
 
 const bot = new Telegraf(config.botToken);
+const websiteURL = "https://prophecypulse.web.app/";
 
 bot.start((ctx) =>
   ctx.reply(
@@ -32,26 +33,52 @@ bot.command("bet", async (ctx) => {
       `This message is ambiguous, is this what you want to place a bet on: ${ambiguity_res.message}? If yes, type /bet ${ambiguity_res.message}.`
     );
   } else if (ambiguity_res.code === 2) {
-    ctx.reply("No ambiguity found. Placing your bet...");
-    // create a file with a unique id and store the bet in it
-    const betId = Math.random().toString(36).substring(7);
+    // check if the searchTerm is a sports event and can be found on web app
+    const resultAllSports: any = checkAllSportsEvent(searchTerm);
+    if (resultAllSports !== -1) {
+      ctx.reply(
+        `Would you like to bet on the game where *${resultAllSports.query}* is playing?`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Website",
+                  url: websiteURL,
+                },
+                {
+                  text: "Place Bet",
+                  url: `${websiteURL}?search=${resultAllSports.query}`,
+                },
+              ],
+            ],
+          },
+          parse_mode: "Markdown",
+          reply_to_message_id: ctx.message?.message_id,
+        }
+      );
+    } else {
+      ctx.reply("No ambiguity found. Placing your bet...");
+      // create a file with a unique id and store the bet in it
+      const betId = Math.random().toString(36).substring(7);
 
-    if (!fs.existsSync("./bets_store.json")) {
-      fs.writeFileSync("./bets_store.json", "{}");
+      if (!fs.existsSync("./bets_store.json")) {
+        fs.writeFileSync("./bets_store.json", "{}");
+      }
+      const betData = fs.readFileSync("./bets_store.json", "utf-8");
+      const betDataJson = JSON.parse(betData);
+      betDataJson[betId] = {
+        bet: searchTerm,
+        user: ctx.message.from.username,
+        id: betId,
+      };
+
+      ctx.replyWithHTML(
+        `Your bet has been placed. Your bet id is <code>${betId}</code>. You can check the result of your bet by typing <code>/check ${betId}</code>`
+      );
+
+      fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
     }
-    const betData = fs.readFileSync("./bets_store.json", "utf-8");
-    const betDataJson = JSON.parse(betData);
-    betDataJson[betId] = {
-      bet: searchTerm,
-      user: ctx.message.from.username,
-      id: betId,
-    };
-
-    ctx.replyWithHTML(
-      `Your bet has been placed. Your bet id is <code>${betId}</code>. You can check the result of your bet by typing <code>/check ${betId}</code>`
-    );   
-
-    fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
   }
 });
 

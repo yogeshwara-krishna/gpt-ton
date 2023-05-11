@@ -7,7 +7,7 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-export const queryGPT = async (message: string) => {
+const callAPI = async (message: string) => {
   const res = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
     messages: [
@@ -18,6 +18,21 @@ export const queryGPT = async (message: string) => {
     ],
   });
   return res.data.choices[0].message?.content;
+};
+
+export const queryGPT = async (message: string) => {
+  // if there's an error, retry 3 times with 1 second delay
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await callAPI(message);
+      return res;
+    } catch (err) {
+      console.log(err);
+      console.log("Retrying...");
+      await sleep(1000);
+    }
+  }
+  return "error";
 };
 
 export const sleep = async (ms: number) => {

@@ -36,14 +36,16 @@ bot.command("bet", async (ctx) => {
   const ambiguity_res: any = await ambiguityCheck(searchTerm);
 
   if (ambiguity_res.code === 0) {
-    ctx.reply("This is a junk message, please send a new message");
+    ctx.reply(
+      "The message appears to be of little relevance, kindly send a new message."
+    );
   } else if (ambiguity_res.code === 1) {
     ctx.reply(
       `This message is ambiguous, is this what you want to place a bet on: ${ambiguity_res.message}? If yes, type /bet ${ambiguity_res.message}.`
     );
   } else if (ambiguity_res.code === 2) {
     // check if the searchTerm is a sports event and can be found on web app
-    const resultAllSports: any = checkAllSportsEvent(searchTerm);
+    const resultAllSports: any = await checkAllSportsEvent(searchTerm);
     if (resultAllSports !== -1) {
       ctx.reply(
         `Would you like to bet on the game where *${resultAllSports.query}* is playing?`,
@@ -67,26 +69,44 @@ bot.command("bet", async (ctx) => {
         }
       );
     } else {
-      ctx.reply("No ambiguity found. Placing your bet...");
-      // create a file with a unique id and store the bet in it
-      const betId = Math.random().toString(36).substring(7);
-
-      if (!fs.existsSync("./bets_store.json")) {
-        fs.writeFileSync("./bets_store.json", "{}");
-      }
-      const betData = fs.readFileSync("./bets_store.json", "utf-8");
-      const betDataJson = JSON.parse(betData);
-      betDataJson[betId] = {
-        bet: searchTerm,
-        user: ctx.message.from.username,
-        id: betId,
-      };
-
-      ctx.replyWithHTML(
-        `Your bet has been placed. Your bet id is <code>${betId}</code>. You can check the result of your bet by typing <code>/check ${betId}</code>`
+      // ask for user confirmation before placing a bet
+      await ctx.replyWithHTML(
+        `Did you mean you want to bet on: <b>${ambiguity_res.message}</b>\nRespond with yes/no.`
       );
 
-      fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
+      bot.on("message", async (ctx: any) => {
+        // If the replied message is the same as the one sent by the bot
+        const userReply = ctx.message.text.toLowerCase();
+        if (userReply !== "yes" && userReply !== "no") {
+          ctx.reply(
+            "Unexpected response, please try again with /bet <bet proposition>"
+          );
+        } else if (userReply === "yes") {
+          // create a file with a unique id and store the bet in it
+          const betId = Math.random().toString(36).substring(7);
+
+          if (!fs.existsSync("./bets_store.json")) {
+            fs.writeFileSync("./bets_store.json", "{}");
+          }
+          const betData = fs.readFileSync("./bets_store.json", "utf-8");
+          const betDataJson = JSON.parse(betData);
+          betDataJson[betId] = {
+            bet: searchTerm,
+            user: ctx.message.from.username,
+            id: betId,
+          };
+
+          ctx.replyWithHTML(
+            `Your bet has been placed. Your bet id is <code>${betId}</code>. You can check the result of your bet by typing <code>/check ${betId}</code>`
+          );
+
+          fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
+        } else {
+          ctx.reply(
+            "Could you please clarify your bet proposition? Respond with /bet <bet propositon> to continue."
+          );
+        }
+      });
     }
   }
 });

@@ -107,16 +107,16 @@ export async function getEventTeams(searchTerm: string) {
 export async function checkAllSportsEvent(searchTerm: string) {
   try {
     let gptResponse: any = await queryGPT(`
-Given a chat message "${searchTerm}" that contains a sports wager, identify if it pertains to soccer, cricket, or basketball. If yes, return a JSON string with code=1, type=one of the three sports, and team=the name of any one team involved in the game. If no, return code=0. 
+Given a chat message "${searchTerm}" that contains a sports wager, identify if it pertains any of the soccer, cricket, or basketball. If yes, return a JSON string with code=1 and team=the name of any one team involved in the game. If no, return code=0. 
 
-The JSON string should be in the following format: {code: number, type: enum(soccer/cricket/basketball), team: team name (it should be full name, do not abbreviate)}.
-Retrun only the json string, Nothing else.`);
+The JSON string should be in the following format: {"code": number, "team": team name (it should be full name, for example: Mumbai Indians for MI), "comments": "Your own comment about the response"}.
+Response from you should be ONLY ONE JSON STRING, Nothing else. For example: {"code": 1, "team": 'Australia', "comments": Teams can be Australia or Pakistan so I Chose any Australia'} I do not want your thoughts in the response at all`);
 
+    console.log(gptResponse);
     gptResponse = JSON.parse(gptResponse);
-
     return gptResponse.code === 0
       ? -1
-      : { category: gptResponse.type.toLowerCase(), query: gptResponse.team };
+      : { query: gptResponse.team };
   } catch (er) {
     console.log("Error in checking sports event", er);
     return -1;

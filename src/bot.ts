@@ -5,6 +5,15 @@ import { ambiguityCheck, checkAllSportsEvent } from "./server";
 import { getResultThroughTweets } from "./utils/tweetUtils";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
+import puppeteer from "puppeteer";
+
+let browser, page;
+
+(async () => {
+  browser = await puppeteer.launch({ headless: true });
+  page = await browser.newPage();
+  console.log("Browser started");
+})();
 
 const bot = new Telegraf(config.botToken);
 const websiteURL = "https://prophecypulse.web.app/";
@@ -106,7 +115,7 @@ bot.command("check", async (ctx) => {
 
       if (resultNum === 3) {
         console.log("Didn't get a result from newsAPI. Trying Twitter\n");
-        const resultTweets = await getResultThroughTweets(searchTerm, ctx);
+        const resultTweets = await getResultThroughTweets(searchTerm, ctx, page);
         resultNum = resultTweets;
       }
 

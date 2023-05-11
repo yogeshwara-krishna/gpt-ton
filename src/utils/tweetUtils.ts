@@ -1,19 +1,11 @@
-import puppeteer from "puppeteer";
+import puppeteer, { Page } from "puppeteer";
 import { scrollPageToBottom } from "puppeteer-autoscroll-down";
 import cheerio from "cheerio";
 import { queryGPT } from "./openAIUtils";
 
 const baseURL = "https://twitter.com/search?q=";
 
-export async function fetchTweets(url: string): Promise<string[]> {
-  const browser = await puppeteer.launch({
-    userDataDir: "./user_data",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  });
-  const page = await browser.newPage();
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-  );
+export async function fetchTweets(url: string, page: Page): Promise<string[]> {
   await page.goto(url + "&src=typed_query&f=top", {
     waitUntil: "domcontentloaded",
   });
@@ -37,11 +29,10 @@ export async function fetchTweets(url: string): Promise<string[]> {
     tweets.push(tweetText);
   });
 
-  await browser.close();
   return tweets;
 }
 
-async function getResultThroughTweets(searchTerm: string, ctx?: any) {
+async function getResultThroughTweets(searchTerm: string, ctx: any, page: Page) {
   const searchQuery = await queryGPT(
     "Give a twitter search query for finding the result of the following: " +
       searchTerm +
@@ -49,7 +40,7 @@ async function getResultThroughTweets(searchTerm: string, ctx?: any) {
   );
   console.log("Search query:", searchQuery);
   const tweets = await fetchTweets(
-    baseURL + encodeURIComponent(searchQuery || searchTerm)
+    baseURL + encodeURIComponent(searchQuery || searchTerm), page
   );
   console.log("Fetched tweets:", tweets);
   const tweetSummary = await checkEvent(tweets, searchTerm);

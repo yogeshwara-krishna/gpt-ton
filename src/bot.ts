@@ -11,6 +11,26 @@ import { getResultThroughTweets } from "./utils/tweetUtils";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
 import { createBotEvent } from "./db/botEvents";
+import puppeteer from "puppeteer";
+
+let browser, page;
+
+(async () => {
+  try {
+    browser = await puppeteer.launch({
+      userDataDir: "./user_data",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    page = await browser.newPage();
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    );
+    console.log("Browser started");
+  } catch (er) {
+    console.log("Error occured while starting browser", er)
+  }
+  
+})();
 
 const bot = new Telegraf(config.botToken);
 const websiteURL = "https://prophecypulse.web.app/";
@@ -93,7 +113,6 @@ bot.action("createBet", async (ctx: any) => {
 
     // check for bet that exists already
     const match_res: any = await matchToExistingBets(searchTerm);
-    console.log(match_res);
     if (match_res !== -1) {
       // since its not -1 then match_res is the event itself, place the bet on it
       const betUrl = `https://prophecypulse.web.app/event?id=${
@@ -220,7 +239,11 @@ bot.command("check", async (ctx) => {
 
       if (resultNum === 3) {
         console.log("Didn't get a result from newsAPI. Trying Twitter\n");
-        const resultTweets = await getResultThroughTweets(searchTerm, ctx);
+        const resultTweets = await getResultThroughTweets(
+          searchTerm,
+          ctx,
+          page
+        );
         resultNum = resultTweets;
       }
 

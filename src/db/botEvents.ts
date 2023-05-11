@@ -3,7 +3,6 @@ import { db } from "./firebase";
 
 interface BotEvent {
   message: string;
-  eventAddress: string;
   createdAt: string;
   id: string;
   team1: string;
@@ -43,7 +42,6 @@ export async function findAllBotEvents() {
       const data = doc.data();
       botEvents.push({
         message: data.message,
-        eventAddress: data.eventAddress,
         createdAt: data.createdAt,
         team1: data.team1,
         team2: data.team2,

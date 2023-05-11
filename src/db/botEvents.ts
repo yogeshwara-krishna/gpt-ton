@@ -8,13 +8,14 @@ interface BotEvent {
   id: string;
   team1: string;
   team2: string;
+  tgUserId: string
 }
 
 export async function createBotEvent(
   message: string,
   team1: string,
   team2: string,
-  eventAddress: string
+  tgUserId: string
 ) {
   try {
     const botEventsCollection = db.collection("botEvents");
@@ -23,7 +24,7 @@ export async function createBotEvent(
       createdAt: new Date().toISOString(),
       team1: team1,
       team2: team2,
-      eventAddress: eventAddress,
+      tgUserId: tgUserId || "-1"
     };
     const docRef = await botEventsCollection.add(newEvent);
     console.log(`Bot event created with ID: ${docRef.id}`);
@@ -47,6 +48,7 @@ export async function findAllBotEvents() {
         team1: data.team1,
         team2: data.team2,
         id: doc.id,
+        tgUserId: data.tgUserId
       });
     });
     return botEvents;

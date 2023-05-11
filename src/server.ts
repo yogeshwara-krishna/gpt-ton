@@ -114,9 +114,7 @@ Response from you should be ONLY ONE JSON STRING, Nothing else. For example: {"c
 
     console.log(gptResponse);
     gptResponse = JSON.parse(gptResponse);
-    return gptResponse.code === 0
-      ? -1
-      : { query: gptResponse.team };
+    return gptResponse.code === 0 ? -1 : { query: gptResponse.team };
   } catch (er) {
     console.log("Error in checking sports event", er);
     return -1;

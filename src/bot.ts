@@ -1,28 +1,41 @@
 import { Telegraf } from "telegraf";
 import { config } from "./config";
 import fs from "fs";
-import { ambiguityCheck, checkAllSportsEvent } from "./server";
+import {
+  ambiguityCheck,
+  checkAllSportsEvent,
+  getEventTeams,
+  matchToExistingBets,
+} from "./server";
 import { getResultThroughTweets } from "./utils/tweetUtils";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
+import { createBotEvent } from "./db/botEvents";
 import puppeteer from "puppeteer";
 
 let browser, page;
 
 (async () => {
-  browser = await puppeteer.launch({
-    userDataDir: "./user_data",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  });
-  page = await browser.newPage();
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-  );  
-  console.log("Browser started");
+  try {
+    browser = await puppeteer.launch({
+      userDataDir: "./user_data",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    page = await browser.newPage();
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    );
+    console.log("Browser started");
+  } catch (er) {
+    console.log("Error occured while starting browser", er)
+  }
+  
 })();
 
 const bot = new Telegraf(config.botToken);
 const websiteURL = "https://prophecypulse.web.app/";
+let searchTerm: any;
+let curUserId: any;
 
 bot.start((ctx) =>
   ctx.reply(
@@ -31,13 +44,13 @@ bot.start((ctx) =>
 );
 
 bot.command("bet", async (ctx) => {
-  const searchTerm = ctx.message.text.split(" ").slice(1).join(" ");
+  searchTerm = ctx.message.text.split(" ").slice(1).join(" ");
   if (!searchTerm) {
     ctx.reply("Please enter a search term after /bet");
     return;
   }
 
-  ctx.reply("Checking the message for ambiguity\n");
+  ctx.reply("Checking the message for ambiguity...\n");
 
   const ambiguity_res: any = await ambiguityCheck(searchTerm);
 
@@ -76,44 +89,129 @@ bot.command("bet", async (ctx) => {
       );
     } else {
       // ask for user confirmation before placing a bet
+      curUserId = ctx.message.from.username;
       await ctx.replyWithHTML(
-        `Did you mean you want to bet on: <b>${ambiguity_res.message}</b>\nRespond with yes/no.`
-      );
-
-      bot.on("message", async (ctx: any) => {
-        // If the replied message is the same as the one sent by the bot
-        const userReply = ctx.message.text.toLowerCase();
-        if (userReply !== "yes" && userReply !== "no") {
-          ctx.reply(
-            "Unexpected response, please try again with /bet <bet proposition>"
-          );
-        } else if (userReply === "yes") {
-          // create a file with a unique id and store the bet in it
-          const betId = Math.random().toString(36).substring(7);
-
-          if (!fs.existsSync("./bets_store.json")) {
-            fs.writeFileSync("./bets_store.json", "{}");
-          }
-          const betData = fs.readFileSync("./bets_store.json", "utf-8");
-          const betDataJson = JSON.parse(betData);
-          betDataJson[betId] = {
-            bet: searchTerm,
-            user: ctx.message.from.username,
-            id: betId,
-          };
-
-          ctx.replyWithHTML(
-            `Your bet has been placed. Your bet id is <code>${betId}</code>. You can check the result of your bet by typing <code>/check ${betId}</code>`
-          );
-
-          fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
-        } else {
-          ctx.reply(
-            "Could you please clarify your bet proposition? Respond with /bet <bet propositon> to continue."
-          );
+        `Did you mean you want to bet on:\n\n <b>${ambiguity_res.message}</b>`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "Yes", callback_data: "createBet" },
+                { text: "No", callback_data: "clarifyBetMessage" },
+              ],
+            ],
+          },
         }
-      });
+      );
     }
+  }
+});
+
+bot.action("createBet", async (ctx: any) => {
+  try {
+    ctx.editMessageReplyMarkup();
+
+    // check for bet that exists already
+    const match_res: any = await matchToExistingBets(searchTerm);
+    if (match_res !== -1) {
+      // since its not -1 then match_res is the event itself, place the bet on it
+      const betUrl = `https://prophecypulse.web.app/event?id=${
+        match_res.id
+      }&team1=${encodeURIComponent(match_res.team1)}&team2=${encodeURIComponent(
+        match_res.team2
+      )}&category=gptBet`;
+      ctx.replyWithHTML(
+        `We found an already existing bet, here is a link to place bet:`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Place bet",
+                  url: betUrl,
+                },
+              ],
+            ],
+          },
+          parse_mode: "Markdown",
+          reply_to_message_id: ctx.message?.message_id,
+        }
+      );
+      return;
+    } else {
+      // create a bet in the db
+      // write event to the firebase collection
+      const eventTeams: any = await getEventTeams(searchTerm);
+
+      if (eventTeams !== -1) {
+        // create a event in firebase with the event address
+        const botEvent: any = await createBotEvent(
+          searchTerm,
+          eventTeams.team1,
+          eventTeams.team2,
+          curUserId
+        );
+        const betUrl = `https://prophecypulse.web.app/event?id=${
+          botEvent.id
+        }&team1=${encodeURIComponent(
+          botEvent.team1
+        )}&team2=${encodeURIComponent(botEvent.team2)}&category=gptBet`;
+        ctx.replyWithHTML(
+          `Here is a link to place your bet on:\n\n${eventTeams.team1} VS ${eventTeams.team2}`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Place bet",
+                    url: betUrl,
+                  },
+                ],
+              ],
+            },
+            parse_mode: "Markdown",
+            reply_to_message_id: ctx.message?.message_id,
+          }
+        );
+      } else {
+        // error from gpt response
+        // quit
+        ctx.reply(
+          "Problem creating an event. Could you please clarify your bet proposition?\n\nRespond with /bet <bet propositon> to continue."
+        );
+      }
+    }
+
+    // // create a file with a unique id and store the bet in it
+    // const betId = Math.random().toString(36).substring(7);
+
+    // if (!fs.existsSync("./bets_store.json")) {
+    //   fs.writeFileSync("./bets_store.json", "{}");
+    // }
+
+    // const betData = fs.readFileSync("./bets_store.json", "utf-8");
+    // const betDataJson = JSON.parse(betData);
+
+    // betDataJson[betId] = {
+    //   bet: searchTerm,
+    //   user: curUserId,
+    //   id: betId,
+    // };
+
+    // fs.writeFileSync("./bets_store.json", JSON.stringify(betDataJson));
+  } catch (er) {
+    console.log("Error occured in creating a bet", er);
+  }
+});
+
+bot.action("clarifyBetMessage", (ctx: any) => {
+  try {
+    ctx.editMessageReplyMarkup();
+    ctx.reply(
+      "Could you please clarify your bet proposition?\n\nRespond with /bet <bet propositon> to continue."
+    );
+  } catch (er) {
+    console.log("Error occured when No is clicked", er);
   }
 });
 
@@ -141,7 +239,11 @@ bot.command("check", async (ctx) => {
 
       if (resultNum === 3) {
         console.log("Didn't get a result from newsAPI. Trying Twitter\n");
-        const resultTweets = await getResultThroughTweets(searchTerm, ctx, page);
+        const resultTweets = await getResultThroughTweets(
+          searchTerm,
+          ctx,
+          page
+        );
         resultNum = resultTweets;
       }
 

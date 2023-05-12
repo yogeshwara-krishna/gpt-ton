@@ -55,3 +55,35 @@ export async function findAllBotEvents() {
   }
 }
 
+export async function findBotEventById(betId: string) {
+  try {
+    const botEventsCollection = db.collection("botEvents");
+    const doc = await botEventsCollection.doc(betId).get();
+    
+    if (doc.exists) {
+      const data = doc.data();
+      
+      if (data) {
+        const botEvent: BotEvent = {
+          message: data.message,
+          createdAt: data.createdAt,
+          team1: data.team1,
+          team2: data.team2,
+          id: doc.id,
+          tgUserId: data.tgUserId,
+        };
+
+        return botEvent;
+      } else {
+        console.log(`No data found for bet ID: ${betId}`);
+        return null;
+      }
+    } else {
+      console.log(`No bet found with ID: ${betId}`);
+      return null;
+    }
+  } catch (er) {
+    console.log(`Error finding bot event with ID: ${betId}`, er);
+    return null;
+  }
+}

@@ -10,10 +10,10 @@ import {
 import { getResultThroughTweets } from "./utils/tweetUtils";
 import { checkThroughNewsAPI } from "./utils/newsApiUtils";
 import { checkThroughGoogle } from "./utils/googleSearch";
-import { createBotEvent } from "./db/botEvents";
-import puppeteer from "puppeteer";
+import { createBotEvent, findBotEventById } from "./db/botEvents";
+import puppeteer, { Browser, Page } from "puppeteer";
 
-let browser, page;
+let browser: Browser, page: Page;
 
 (async () => {
   try {
@@ -27,9 +27,8 @@ let browser, page;
     );
     console.log("Browser started");
   } catch (er) {
-    console.log("Error occured while starting browser", er)
+    console.log("Error occured while starting browser", er);
   }
-  
 })();
 
 const bot = new Telegraf(config.botToken);
@@ -222,10 +221,9 @@ bot.command("check", async (ctx) => {
     ctx.reply("Please enter a search term after /check");
     return;
   }
-  const betData = fs.readFileSync("./bets_store.json", "utf-8");
-  const betDataJson = JSON.parse(betData);
-  if (betDataJson[id]) {
-    const searchTerm = betDataJson[id].bet;
+  const betData = await findBotEventById(id);
+  if (betData) {
+    const searchTerm = betData.message;
     try {
       ctx.reply("Searching for the result of " + searchTerm);
       const resultGoogle = await checkThroughGoogle(searchTerm, ctx);

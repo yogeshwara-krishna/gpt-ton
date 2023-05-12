@@ -60,18 +60,23 @@ async function getResultThroughTweets(searchTerm: string, ctx: any, page: Page) 
 }
 
 async function fetchTweetsAPI(searchTerm: string) {
-  const client = new TwitterApi({
-    appKey: config.appKey,
-    appSecret: config.appSecret,
-    accessToken: config.accessToken,
-    accessSecret: config.accessTokenSecret,
-  });
-  const result = await client.v2.get('tweets/search/recent', { query: searchTerm, max_results: 30 });
-  const tweets = [];
-  for (const tweet of result.data) {
-    tweets.push(tweet.text);
+  try {
+    const client = new TwitterApi({
+      appKey: config.appKey,
+      appSecret: config.appSecret,
+      accessToken: config.accessToken,
+      accessSecret: config.accessTokenSecret,
+    });
+    const result = await client.v2.get('tweets/search/recent', { query: searchTerm, max_results: 30 });
+    const tweets = [];
+    for (const tweet of result.data) {
+      tweets.push(tweet.text);
+    }
+    return tweets;
+  } catch (err) {
+    console.log(err);
+    return [];
   }
-  return tweets;
 }
 
 async function checkEvent(

@@ -5,5 +5,9 @@ export const config = {
   newsApiKey: "YOUR_NEWS_API_KEY",
   googleApiKey: "YOUR_GOOGLE_API_KEY",
   googleSearchEngineId: "YOUR_GOOGLE_SEARCH_ENGINE_ID",
-  botToken: "YOUR_TELEGRAM_BOT_TOKEN"
+  botToken: "YOUR_TELEGRAM_BOT_TOKEN",
+  appKey: 'TWITTER_APP_KEY',
+  appSecret: 'TWITTER_APP_SECRET',
+  accessToken: 'TWITTER_ACCESS_TOKEN',
+  accessTokenSecret: 'TWITTER_ACCESS_TOKEN_SECRET'
 };

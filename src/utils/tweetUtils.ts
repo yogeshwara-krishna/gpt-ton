@@ -2,6 +2,8 @@ import puppeteer, { Page } from "puppeteer";
 import { scrollPageToBottom } from "puppeteer-autoscroll-down";
 import cheerio from "cheerio";
 import { queryGPT } from "./openAIUtils";
+import { TwitterApi } from "twitter-api-v2";
+import { config } from "../config";
 
 const baseURL = "https://twitter.com/search?q=";
 
@@ -34,14 +36,12 @@ export async function fetchTweets(url: string, page: Page): Promise<string[]> {
 
 async function getResultThroughTweets(searchTerm: string, ctx: any, page: Page) {
   const searchQuery = await queryGPT(
-    "Give a twitter search query for finding the result of the following: " +
-      searchTerm +
-      ". Give exact query to type in twitter search bar. Don't search for long things. It has to be small."
+    "Give a twitter search API query for finding the result of the following: " +
+    searchTerm +
+    ". The API request will be made via get('tweets/search/recent', { query: searchTerm });. Give only the searchTerm, nothing else "
   );
   console.log("Search query:", searchQuery);
-  const tweets = await fetchTweets(
-    baseURL + encodeURIComponent(searchQuery || searchTerm), page
-  );
+  const tweets = await fetchTweetsAPI(encodeURIComponent(searchQuery || searchTerm));
   console.log("Fetched tweets:", tweets);
   const tweetSummary = await checkEvent(tweets, searchTerm);
   console.log("Summary:", tweetSummary);
@@ -56,6 +56,21 @@ async function getResultThroughTweets(searchTerm: string, ctx: any, page: Page) 
   }
 
   return resultNum;
+}
+
+async function fetchTweetsAPI(searchTerm: string) {
+  const client = new TwitterApi({
+    appKey: config.appKey,
+    appSecret: config.appSecret,
+    accessToken: config.accessToken,
+    accessSecret: config.accessTokenSecret,
+  });
+  const result = await client.v2.get('tweets/search/recent', { query: searchTerm, max_results: 30 });
+  const tweets = [];
+  for (const tweet of result.data) {
+    tweets.push(tweet.text);
+  }
+  return tweets;
 }
 
 async function checkEvent(

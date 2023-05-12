@@ -41,7 +41,7 @@ async function getResultThroughTweets(searchTerm: string, ctx: any, page: Page) 
     ". The API request will be made via get('tweets/search/recent', { query: searchTerm });. Give only the searchTerm, nothing else "
   );
   console.log("Search query:", searchQuery);
-  const tweets = await fetchTweetsAPI(encodeURIComponent(searchQuery || searchTerm));
+  const tweets = await fetchTweetsAPI(searchQuery || searchTerm);
   console.log("Fetched tweets:", tweets);
   const tweetSummary = await checkEvent(tweets, searchTerm);
   console.log("Summary:", tweetSummary);

@@ -114,11 +114,10 @@ bot.action("createBet", async (ctx: any) => {
     const match_res: any = await matchToExistingBets(searchTerm);
     if (match_res !== -1) {
       // since its not -1 then match_res is the event itself, place the bet on it
-      const betUrl = `https://prophecypulse.web.app/event?id=${
-        match_res.id
-      }&team1=${encodeURIComponent(match_res.team1)}&team2=${encodeURIComponent(
-        match_res.team2
-      )}&category=gptBet`;
+      const betUrl = `https://prophecypulse.web.app/event?id=${match_res.id
+        }&team1=${encodeURIComponent(match_res.team1)}&team2=${encodeURIComponent(
+          match_res.team2
+        )}&category=gptBet`;
       ctx.replyWithHTML(
         `We found an already existing bet, here is a link to place bet:`,
         {
@@ -150,11 +149,10 @@ bot.action("createBet", async (ctx: any) => {
           eventTeams.team2,
           curUserId
         );
-        const betUrl = `https://prophecypulse.web.app/event?id=${
-          botEvent.id
-        }&team1=${encodeURIComponent(
-          botEvent.team1
-        )}&team2=${encodeURIComponent(botEvent.team2)}&category=gptBet`;
+        const betUrl = `https://prophecypulse.web.app/event?id=${botEvent.id
+          }&team1=${encodeURIComponent(
+            botEvent.team1
+          )}&team2=${encodeURIComponent(botEvent.team2)}&category=gptBet`;
         ctx.replyWithHTML(
           `Here is a link to place your bet on:\n\n${eventTeams.team1} VS ${eventTeams.team2}`,
           {
@@ -226,25 +224,23 @@ bot.command("check", async (ctx) => {
     const searchTerm = betData.message;
     try {
       ctx.reply("Searching for the result of " + searchTerm);
-      const resultGoogle = await checkThroughGoogle(searchTerm, ctx);
-      let resultNum = resultGoogle;
+      let resultNum = 3; // set a default value of 3 (no result)
+
+      console.log("Trying Twitter\n");
+      const resultTweets = await getResultThroughTweets(searchTerm, ctx, page);
+      resultNum = resultTweets;
 
       if (resultNum === 3) {
-        console.log("Didn't get a result from Google Search. Trying newsAPI\n");
+        console.log("Didn't get a result from Twitter. Trying newsAPI\n");
         const resultNews = await checkThroughNewsAPI(searchTerm, ctx);
         resultNum = resultNews;
       }
 
       if (resultNum === 3) {
-        console.log("Didn't get a result from newsAPI. Trying Twitter\n");
-        const resultTweets = await getResultThroughTweets(
-          searchTerm,
-          ctx,
-          page
-        );
-        resultNum = resultTweets;
+        console.log("Didn't get a result from newsAPI. Trying Google Search\n");
+        const resultGoogle = await checkThroughGoogle(searchTerm, ctx);
+        resultNum = resultGoogle;
       }
-
       console.log("Result is ", resultNum);
       if (resultNum != 3) {
         console.log("Result is ", resultNum);
@@ -272,10 +268,10 @@ bot.command("check", async (ctx) => {
 bot.command("help", (ctx) => {
   ctx.reply(
     "Here are the available commands:\n\n" +
-      "/start - Sends a welcome message and brief introduction\n\n" +
-      "/bet <bet proposition> - Places a bet on the given proposition. For example: /bet it will rain tomorrow, /bet Djokovic will loss the first set in his next game, /bet Modi will announce a more limited reform than the one he originally proposed\n\n" +
-      "/check <bet id> - Checks the result of a previously placed bet using the provided bet ID. For example: /check abc123\n\n" +
-      "/help - Shows the list of commands"
+    "/start - Sends a welcome message and brief introduction\n\n" +
+    "/bet <bet proposition> - Places a bet on the given proposition. For example: /bet it will rain tomorrow, /bet Djokovic will loss the first set in his next game, /bet Modi will announce a more limited reform than the one he originally proposed\n\n" +
+    "/check <bet id> - Checks the result of a previously placed bet using the provided bet ID. For example: /check abc123\n\n" +
+    "/help - Shows the list of commands"
   );
 });
 

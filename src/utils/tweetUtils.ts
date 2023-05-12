@@ -38,7 +38,7 @@ async function getResultThroughTweets(searchTerm: string, ctx: any, page: Page) 
   const searchQuery = await queryGPT(
     "Give a twitter search API query for finding the result of the following: " +
     searchTerm +
-    ". The API request will be made via get('tweets/search/recent', { query: searchTerm });. Give only the searchTerm, nothing else and limit the number of words "
+    ". The API request will be made via get('tweets/search/recent', { query: searchTerm });. Give only the searchTerm, nothing else and limit the number of words. Use only words followed by a space."
   );
   console.log("Search query:", searchQuery);
   const toSearch = searchQuery ? searchQuery : searchTerm;
@@ -67,6 +67,7 @@ async function fetchTweetsAPI(searchTerm: string) {
       accessToken: config.accessToken,
       accessSecret: config.accessTokenSecret,
     });
+    searchTerm = searchTerm.replace(/"/g, '');
     const result = await client.v2.get('tweets/search/recent', { query: searchTerm, max_results: 30 });
     const tweets = [];
     for (const tweet of result.data) {

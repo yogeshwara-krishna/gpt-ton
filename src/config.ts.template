@@ -1,0 +1,13 @@
+export const config = {
+  tonMnemonic1: "TON_TEST_MNEMONIC_1",
+  tonMnemonic2: "TON_TEST_MNEMONIC_2",
+  openAiApiKey: "YOUR_OPENAI_KEY",
+  newsApiKey: "YOUR_NEWS_API_KEY",
+  googleApiKey: "YOUR_GOOGLE_API_KEY",
+  googleSearchEngineId: "YOUR_GOOGLE_SEARCH_ENGINE_ID",
+  botToken: "YOUR_TELEGRAM_BOT_TOKEN",
+  appKey: 'TWITTER_APP_KEY',
+  appSecret: 'TWITTER_APP_SECRET',
+  accessToken: 'TWITTER_ACCESS_TOKEN',
+  accessTokenSecret: 'TWITTER_ACCESS_TOKEN_SECRET'
+};
